@@ -202,12 +202,12 @@
         android:id="@+id/detect_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Detectar beacon"
-        android:layout_margin="24dp"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
+        android:layout_margin="24dp"
         android:background="@color/colorPrimary"
+        android:text="Detectar beacon"
         android:textColor="@android:color/white"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
 </RelativeLayout>

@@ -214,6 +214,7 @@ public class SetupRoomBeaconsFragment extends Fragment {
             mHolder.info.setText("Para o funcionamento do sistema é necessário detectar cada beacon pertencente ao cômodo. \nEncoste o celular na parede ao lado do 1º\n" +
                     "beacon e dê inicio à detecção:");
             mHolder.phone1.setVisibility(View.VISIBLE);
+            mHolder.detect.setVisibility(View.VISIBLE); //COLOQUEI ESSA LINHAuinta
         } else if (currentBeacon == 2) {
             mHolder.detect.setVisibility(View.VISIBLE);
             mHolder.phone1.setVisibility(View.GONE);
