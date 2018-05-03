@@ -11,7 +11,9 @@ enum class MessageType(val value: String) {
     SDPMessage("sdp"),
     ICEMessage("ice"),
     MatchMessage("match"),
-    PeerLeft("peer-left");
+    PeerLeft("peer-left"),
+    MonitorMessage("monitor"),
+    LocatorMessage("locator");
 
     override fun toString() = value
 }
@@ -20,6 +22,8 @@ open class ClientMessage(val type: MessageType)
 
 data class SDPMessage(val sdp: String) : ClientMessage(MessageType.SDPMessage)
 data class ICEMessage(val label: Int, val id: String, val candidate: String) : ClientMessage(MessageType.ICEMessage)
+data class LocatorMessage(val permission: String) : ClientMessage(MessageType.LocatorMessage)
+data class MonitorMessage(val permission: String) : ClientMessage(MessageType.MonitorMessage)
 data class MatchMessage(val match: String, val offer: Boolean) : ClientMessage(MessageType.MatchMessage)
 class PeerLeft : ClientMessage(MessageType.PeerLeft)
 
@@ -77,6 +81,12 @@ class SignalingWebSocket : WebSocketListener() {
                 json.put("id", clientMessage.id)
                 json.put("label", clientMessage.label)
             }
+            is LocatorMessage -> {
+                json.put("permission", clientMessage.permission)
+            }
+            is MonitorMessage -> {
+                json.put("permission", clientMessage.permission)
+            }
             else -> {
                 Log.w(TAG, "Message of type '${clientMessage.type.value}' can't be sent to the server")
                 return
@@ -97,7 +107,12 @@ class SignalingWebSocket : WebSocketListener() {
     fun sendCandidate(label: Int, id: String, candidate: String) {
         send(ICEMessage(label, id, candidate))
     }
-
+    fun sendLocator(permission: String) {
+        send(LocatorMessage(permission))
+    }
+//    fun sendMonitor(permission: String) {
+//        send(MonitorMessage(permission))
+//    }
     companion object {
         private val TAG = "SignalingWebSocket"
     }

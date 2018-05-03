@@ -97,7 +97,7 @@ class TrackActivity : AppCompatActivity() {
     }
     companion object {
 
-        private val BACKEND_URL = "ws://192.168.15.8:4433/"
+        private val BACKEND_URL = "ws://192.168.15.8:7000/"
     }
 
 }

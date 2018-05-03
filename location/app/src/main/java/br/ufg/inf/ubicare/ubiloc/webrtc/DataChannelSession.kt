@@ -116,6 +116,8 @@ class DataChannelSession (
         onSendCb(sendChannel);
 //        sendMessage();
 
+        signaler.sendLocator("teste");
+
     }
     private fun start() {
         executor.execute(this::maybeCreateOffer)

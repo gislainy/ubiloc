@@ -149,7 +149,7 @@ class RemoteLocationService : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         calculateAndSendLocation()
-
+        startVideoSession();
         return Service.START_STICKY
     }
 
@@ -174,11 +174,50 @@ class RemoteLocationService : Service() {
                     val centroid = optimum.point.toArray()
                     println("COORDENADAS " + centroid[0] + ", " + centroid[1])
                     mDatabase!!.updateUserLocationAtRoomOnServer(Room.listAll(Room::class.java)[0].name, centroid)
-
+                    sendMessage("COORDENADAS " + centroid[0] + ", " + centroid[1])
                 }
             }
         }
 
+    }
+    private fun startVideoSession() {
+//        dataChannelSession = DataChannelSession.connect(this, BACKEND_URL, this::onMesasge, this::onSendCb, this::onStatusChanged)
+
+    }
+    private fun onStatusChanged(newStatus: CallStatus) {
+//        Log.d(TAG,"New call status: $newStatus")
+//        runOnUiThread {
+//            when(newStatus) {
+//                CallStatus.FINISHED -> finish()
+//                else -> {
+//                    statusConnection?.text = resources.getString(newStatus.label)
+//                    statusConnection?.setTextColor(ContextCompat.getColor(this, newStatus.color))
+//                }
+//            }
+//        }
+    }
+
+    private fun onMesasge(string: String) {
+//        runOnUiThread {
+//            val textRemote = remoteTextView?.text
+//            remoteTextView?.text = string
+//        }
+    }
+    private fun sendMessage() {
+//        val textLocal = localTextView?.text;
+//        if (channel?.state() == DataChannel.State.OPEN) {
+//            val buffer = ByteBuffer.wrap(textLocal.toString().toByteArray())
+//            channel?.send(DataChannel.Buffer(buffer, false))
+//        }
+    }
+    private fun onSendCb(chan: DataChannel?) {
+        if(chan != null) channel = chan;
+    }
+    private fun sendMessage(text: String) {
+        if (channel?.state() == DataChannel.State.OPEN) {
+            val buffer = ByteBuffer.wrap(text.toByteArray())
+            channel?.send(DataChannel.Buffer(buffer, false))
+        }
     }
     companion object {
 
@@ -195,7 +234,7 @@ class RemoteLocationService : Service() {
             a[a.size - 1] = e
             return a
         }
-        private val BACKEND_URL = "ws://192.168.15.8:4433/"
+        private val BACKEND_URL = "ws://192.168.40.174:7000/"
     }
 
 
