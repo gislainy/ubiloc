@@ -1,4 +1,6 @@
 import * as WebSocket from 'ws';
+
+import * as socketIo from 'socket.io';
 import * as uuidv4 from 'uuid/v4';
 import { EventEmitter } from 'events';
 
@@ -70,17 +72,17 @@ export default class Ubicare {
     this.monitor = [];
   }
 
-  register(ws: WebSocket) {
+  register(ws: any) {
     const id = uuidv4();
     const peer = [];
     const session = { id, ws, peer };
 
     this.sessions.set(id, session);
-    this.tryMatch(session);
+    // this.tryMatch(session);
 
     ws.on('close', () => this.unregister(id));
     ws.on('error', () => this.unregister(id));
-    ws.on('message', (data: WebSocket.Data) => this.handleMessage(id, data.toString()));
+    ws.on('message', (data: any) => this.handleMessage(id, data.toString()));
   }
   private handleLocator(id: string, data: string) {
     console.log('handleLocator', arguments);
@@ -128,15 +130,13 @@ export default class Ubicare {
         case MessageType.ICE:
           if (session.peer && session.peer.length) {
             console.log('MessageType', message.type)
-            const pId = session.peer[0]
-            // session.peer.forEach(pId => {
-              const peer = this.sessions.get(pId);
-              if (!peer) { return console.error(`Can't find session for peer of id ${id} with pid ${pId}`); }
-              if (peer.id != id) {
-                console.log(['send de', id,'para', peer.id].join(' '));
-                this.send(peer, message);
-              }
-            // });
+            const peer = this.sessions.get(session.peer[session.peer.length - 1]);
+            if (!peer) { return console.error(`Can't find session for peer of ${id}`); }
+            if (peer.id != id) {
+              console.log('send', peer.id);
+              console.log('message', message);
+              this.send(peer, message);
+            }
             break;
           }
         default:
@@ -151,19 +151,17 @@ export default class Ubicare {
 
   private tryMatch(session: Session) {
     if (this.unmatched.length > 0) {
-      // this.unmatched.forEach(match => {
-        const match = this.unmatched[0];
-        const other = this.sessions.get(match);
+      this.unmatched.forEach(un => {
+        if(un === session.id) return;
+        const other = this.sessions.get(un);
         if (other) {
-          if (session.peer.every(p => p != match))
-            session.peer.push(match);
-          if (other.peer.every(p => p != session.id))
-            other.peer.push(session.id);
+          session.peer.push(un);
+          other.peer.push(session.id);
           this.send(session, { type: MessageType.MATCHED, match: other.id, offer: true });
           this.send(other, { type: MessageType.MATCHED, match: session.id, offer: false });
         }
-      // });
-      // this.unmatched.push(session.id);
+
+      })
     } else {
       this.unmatched.push(session.id);
     }
@@ -184,7 +182,6 @@ export default class Ubicare {
     } else {
       this.monitor = this.monitor.filter(m => m != id);
     }
-    this.unmatched = this.unmatched.filter(m => m != id);
     this.sessions.delete(id);
   }
 

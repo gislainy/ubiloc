@@ -230,7 +230,7 @@ class DataChannelSession (
             Log.d(TAG, "remoteDataChannel onMessage()")
 
             if (!buffer.binary) {
-                val limit = buffer.data.limit()
+                    val limit = buffer.data.limit()
                 val datas = ByteArray(limit)
                 buffer.data.get(datas);
                 onMessageCb(String(datas))
@@ -284,16 +284,16 @@ class DataChannelSession (
 
     companion object {
 
-        fun connect(context: Context, url: String, onMessageCb: (String) -> Unit, onSendCb: (DataChannel?) -> Unit, callback: (CallStatus) -> Unit) : DataChannelSession {
-            val websocketHandler = SignalingWebSocket()
-            val session = DataChannelSession(context, onMessageCb, onSendCb, callback, websocketHandler)
-            val client = OkHttpClient()
-            val request = Request.Builder().url(url).build()
-            Log.i(TAG, "Connecting to $url")
-            client.newWebSocket(request, websocketHandler)
-            client.dispatcher().executorService().shutdown()
-            return session
-        }
+            fun connect(context: Context, url: String, onMessageCb: (String) -> Unit, onSendCb: (DataChannel?) -> Unit, callback: (CallStatus) -> Unit) : DataChannelSession {
+                val websocketHandler = SignalingWebSocket()
+                val session = DataChannelSession(context, onMessageCb, onSendCb, callback, websocketHandler)
+                val client = OkHttpClient()
+                val request = Request.Builder().url(url).build()
+                Log.i(TAG, "Connecting to $url")
+                client.newWebSocket(request, websocketHandler)
+                client.dispatcher().executorService().shutdown()
+                return session
+            }
 
         private val TAG = "DataChannelSession"
         private val executor = Executors.newSingleThreadExecutor()

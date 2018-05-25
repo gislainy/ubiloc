@@ -29,6 +29,14 @@ class TrackActivity : AppCompatActivity() {
         startVideoSession()
         initViews()
     }
+    override fun onDestroy() {
+        super.onDestroy()
+
+        dataChannelSession?.terminate()
+
+
+    }
+
 
     private fun initViews() {
         mHolder = ViewHolder()
@@ -95,6 +103,7 @@ class TrackActivity : AppCompatActivity() {
     private inner class ViewHolder {
         internal var coordinates: TextView? = null
     }
+
     companion object {
 
         private val BACKEND_URL = "ws://192.168.15.8:7000/"
