@@ -86,7 +86,9 @@ export default class Roulette {
           break;
       }
     } catch (err) {
-      console.error(`Unexpected message from ${id}: ${data}`);
+      console.error(`Unexpected message from ${id}: ${data}`)
+      console.error(`Erro: ${err}`);
+
     }
   }
 
