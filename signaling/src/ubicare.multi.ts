@@ -1,6 +1,4 @@
 import * as WebSocket from 'ws';
-
-import * as socketIo from 'socket.io';
 import * as uuidv4 from 'uuid/v4';
 import { EventEmitter } from 'events';
 
@@ -8,9 +6,7 @@ enum MessageType {
   MATCHED = 'matched',
   SDP = 'sdp',
   ICE = 'ice',
-  PEER_LEFT = 'peer-left',
-  LOCATOR = 'locator',
-  MONITOR = 'monitor'
+  PEER_LEFT = 'peer-left'
 }
 
 type MatchMessage = {
@@ -35,153 +31,89 @@ type PeerLeft = {
   type: MessageType.PEER_LEFT
 }
 
-type LocatorMessage = {
-  type: MessageType.LOCATOR,
-  permission: string,
-}
-type MonitorMessage = {
-  type: MessageType.MONITOR,
-  permission: string,
-}
 type ClientMessage
   = MatchMessage
   | SDPMessage
   | ICEMessage
   | PeerLeft
-  | LocatorMessage
-  | MonitorMessage
+
 type Session = {
-  id: string,
-  ws: WebSocket
-  peer: Array<string>,
-  locator?: boolean,
-  permission?: string,
+  id: string
+  ws: WebSocket,
+
+  peer?: Array<string>
 }
 
-export default class Ubicare {
+export default class Roulette {
 
   private sessions: Map<string, Session>;
   private unmatched: Array<string>;
-  // private unmatched : Array<string>;
-  private locator: Array<string>
-  private monitor: Array<string>
+
   constructor() {
     this.sessions = new Map();
     this.unmatched = [];
-    this.locator = [];
-    this.monitor = [];
   }
 
-  register(ws: any) {
+  register(ws: WebSocket) {
     const id = uuidv4();
     const peer = [];
     const session = { id, ws, peer };
 
     this.sessions.set(id, session);
-    // this.tryMatch(session);
+    this.tryMatch(session);
 
     ws.on('close', () => this.unregister(id));
     ws.on('error', () => this.unregister(id));
-    ws.on('message', (data: any) => this.handleMessage(id, data.toString()));
+    ws.on('message', (data: WebSocket.Data) => this.handleMessage(id, data.toString()));
   }
-  private handleLocator(id: string, data: string) {
-    console.log('handleLocator', arguments);
-    const locator = this.sessions.get(id);
-    locator.locator = true;
-    // session.permission = data.permission;
-    this.locator.push(id);
-    this.monitor.forEach(m => {
-      const monitor = this.sessions.get(m);
-      if (monitor.peer.length == 0) {
-        monitor.peer.push(id);
-        locator.peer.push(m);
-        this.send(monitor, { type: MessageType.MATCHED, match: locator.id, offer: false });
-        this.send(locator, { type: MessageType.MATCHED, match: monitor.id, offer: true });
-      }
-    });
-  }
-  private handleMonitor(id: string, data: string) {
-    console.log('handleMonitor', arguments);
-    const monitor = this.sessions.get(id);
-    monitor.locator = false;
-    const locatorId = this.locator[0];
-    const locator = this.sessions.get(locatorId);
-    this.monitor.push(id);
-    if (locator) {
-      monitor.peer.push(locator.id);
-      locator.peer.push(id);
-      this.send(monitor, { type: MessageType.MATCHED, match: locator.id, offer: true });
-      this.send(locator, { type: MessageType.MATCHED, match: monitor.id, offer: false });
-    }
-  }
+
   private handleMessage(id: string, data: string) {
     try {
       const message = JSON.parse(data) as ClientMessage;
       const session = this.sessions.get(id);
       if (!session) { return console.error(`Can't find session for ${id}`); }
       switch (message.type) {
-        case MessageType.LOCATOR:
-          this.handleLocator(id, data);
-          break;
-        case MessageType.MONITOR:
-          this.handleMonitor(id, data);
-          break;
         case MessageType.SDP:
         case MessageType.ICE:
-          if (session.peer && session.peer.length) {
-            console.log('MessageType', message.type)
-            const peer = this.sessions.get(session.peer[session.peer.length - 1]);
+          session.peer.forEach(pId => {
+            const peer = this.sessions.get(pId);
             if (!peer) { return console.error(`Can't find session for peer of ${id}`); }
-            if (peer.id != id) {
-              console.log('send', peer.id);
-              console.log('message', message);
-              this.send(peer, message);
-            }
-            break;
-          }
+            this.send(peer, message);
+          })
+          break;
         default:
-          console.error(`SWITCH Unexpected message from ${id}: ${data}`);
+          console.error(`Unexpected message from ${id}: ${data}`);
           break;
       }
     } catch (err) {
       console.error(`Unexpected message from ${id}: ${data}`);
-      console.error(`Erro: ${err}`);
     }
   }
 
   private tryMatch(session: Session) {
     if (this.unmatched.length > 0) {
-      this.unmatched.forEach(un => {
-        if(un === session.id) return;
-        const other = this.sessions.get(un);
-        if (other) {
-          session.peer.push(un);
-          other.peer.push(session.id);
-          this.send(session, { type: MessageType.MATCHED, match: other.id, offer: true });
-          this.send(other, { type: MessageType.MATCHED, match: session.id, offer: false });
-        }
-
-      })
+      const match = this.unmatched[0];
+      const other = this.sessions.get(match);
+      if (other) {
+        session.peer.push(match);
+        other.peer.push(session.id);
+        this.send(session, { type: MessageType.MATCHED, match: other.id, offer: true });
+        this.send(other, { type: MessageType.MATCHED, match: session.id, offer: true });
+      }
     } else {
       this.unmatched.push(session.id);
     }
   }
 
   private unregister(id: string) {
-    console.log('unregister', arguments)
     const session = this.sessions.get(id);
     if (session && session.peer) {
-      for (const p in session.peer) {
-        const peer = this.sessions.get(p);
+      session.peer.forEach(pId => {
+        const peer = this.sessions.get(pId);
         if (peer) this.send(peer, { type: MessageType.PEER_LEFT })
-      }
+      })
     }
-
-    if (session && session.locator) {
-      this.locator = this.locator.filter(l => l != id);
-    } else {
-      this.monitor = this.monitor.filter(m => m != id);
-    }
+    this.unmatched = this.unmatched.filter(other => id !== other);
     this.sessions.delete(id);
   }
 
