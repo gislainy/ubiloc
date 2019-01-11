@@ -76,6 +76,7 @@ export default class Roulette {
         case MessageType.SDP:
         case MessageType.ICE:
           session.peer.forEach(pId => {
+            console.log('pId', pId)
             const peer = this.sessions.get(pId);
             if (!peer) { return console.error(`Can't find session for peer of ${id}`); }
             this.send(peer, message);
@@ -96,11 +97,13 @@ export default class Roulette {
     if (this.unmatched.length > 0) {
       const match = this.unmatched[0];
       const other = this.sessions.get(match);
+      console.log('session.id', session.id)
+      console.log('match', match)
       if (other) {
         session.peer.push(match);
         other.peer.push(session.id);
         this.send(session, { type: MessageType.MATCHED, match: other.id, offer: true });
-        this.send(other, { type: MessageType.MATCHED, match: session.id, offer: true });
+        this.send(other, { type: MessageType.MATCHED, match: session.id, offer: false });
       }
     } else {
       this.unmatched.push(session.id);
@@ -108,6 +111,8 @@ export default class Roulette {
   }
 
   private unregister(id: string) {
+    console.log('unregister', arguments)
+
     const session = this.sessions.get(id);
     if (session && session.peer) {
       session.peer.forEach(pId => {

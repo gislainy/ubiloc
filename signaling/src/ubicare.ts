@@ -170,7 +170,7 @@ export default class Ubicare {
   }
 
   private unregister(id: string) {
-    console.log('unregister', arguments)
+      console.log('unregister', arguments)
     const session = this.sessions.get(id);
     if (session && session.peer) {
       for (const p in session.peer) {
